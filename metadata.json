@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Copy of Tanvir Electronics",
+  "description": "A premium, high-end electronics shop landing page and category browser featuring a modern aesthetic inspired by contemporary design trends.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
