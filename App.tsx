@@ -55,6 +55,23 @@ const App: React.FC = () => {
 
   // Initial App Load: Session + Catalog
   useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        const currentUser: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: profile?.full_name || 'Tanvir User',
+          phone: profile?.phone || '',
+          address: profile?.address || '',
+          createdAt: profile?.created_at || new Date().toISOString()
+        };
+        setUser(currentUser);
+      } else {
+        setUser(null);
+      }
+    });
+
     const bootApp = async () => {
       try {
         // 1. Get Session
@@ -119,6 +136,10 @@ const App: React.FC = () => {
       }
     };
     bootApp();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const navigateTo = (view: AppView) => {

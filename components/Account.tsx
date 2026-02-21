@@ -16,17 +16,11 @@ interface AccountProps {
 
 const Account: React.FC<AccountProps> = ({ user, onUpdate }) => {
   const [isSignIn, setIsSignIn] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [resendTimer, setResendTimer] = useState(0);
-  const [rateLimited, setRateLimited] = useState(false);
   
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const otpInputs = useRef<(HTMLInputElement | null)[]>([]);
-
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -41,36 +35,10 @@ const Account: React.FC<AccountProps> = ({ user, onUpdate }) => {
     password: ''
   });
 
-  useEffect(() => {
-    let interval: any;
-    if (resendTimer > 0) {
-      interval = setInterval(() => setResendTimer(prev => prev - 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [resendTimer]);
-
-  const handleOtpChange = (value: string, index: number) => {
-    if (isNaN(Number(value))) return;
-    const newOtp = [...otp];
-    newOtp[index] = value.substring(value.length - 1);
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      otpInputs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpInputs.current[index - 1]?.focus();
-    }
-  };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setRateLimited(false);
     
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -82,18 +50,15 @@ const Account: React.FC<AccountProps> = ({ user, onUpdate }) => {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
       });
 
-      if (authError) {
-        if (authError.status === 429 || authError.message.toLowerCase().includes('rate limit')) {
-          setRateLimited(true);
-          throw new Error('Supabase Email limit reached. Please wait 1 hour or update your dashboard settings.');
-        }
-        throw authError;
-      }
+      if (authError) throw authError;
 
       if (authData.user) {
-        // Create Profile record even if email is pending
+        // Create Profile record
         await supabase.from('profiles').upsert({
           id: authData.user.id,
           full_name: formData.name,
@@ -101,75 +66,19 @@ const Account: React.FC<AccountProps> = ({ user, onUpdate }) => {
           address: formData.address
         });
 
-        setIsVerifying(true);
-        setSuccess('We sent a verification code to your email.');
-        setResendTimer(60);
+        // Log in immediately in the UI
+        onUpdate({
+          id: authData.user.id,
+          name: formData.name,
+          email: authData.user.email || '',
+          phone: formData.phone,
+          address: formData.address,
+          createdAt: new Date().toISOString()
+        });
+        setSuccess('Account created successfully!');
       }
     } catch (err: any) {
       setError(err.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = otp.join('');
-    if (token.length < 6) {
-      setError('Please enter the full 6-digit code');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
-        email: formData.email,
-        token,
-        type: 'signup'
-      });
-
-      if (verifyError) throw verifyError;
-
-      if (data.user) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-        onUpdate({
-          id: data.user.id,
-          name: profile?.full_name || 'User',
-          email: data.user.email || '',
-          phone: profile?.phone || '',
-          address: profile?.address || '',
-          createdAt: profile?.created_at || new Date().toISOString()
-        });
-      }
-    } catch (err: any) {
-      setError(err.message || 'Invalid verification code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (resendTimer > 0) return;
-    setLoading(true);
-    setError('');
-    try {
-      const { error: resendError } = await supabase.auth.resend({
-        type: 'signup',
-        email: formData.email,
-      });
-      if (resendError) {
-        if (resendError.status === 429) {
-           setRateLimited(true);
-           throw new Error('Email rate limit exceeded. Check Supabase Dashboard -> Auth -> Settings.');
-        }
-        throw resendError;
-      }
-      setResendTimer(60);
-      setSuccess('A new code has been sent.');
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend code');
     } finally {
       setLoading(false);
     }
@@ -204,13 +113,6 @@ const Account: React.FC<AccountProps> = ({ user, onUpdate }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Development bypass: Allows login if user exists but email is stuck
-  const bypassVerification = () => {
-    setIsVerifying(false);
-    setIsSignIn(true);
-    setError('Verification skipped. Try signing in if you already created the account.');
   };
 
   if (user) {
@@ -267,84 +169,6 @@ const Account: React.FC<AccountProps> = ({ user, onUpdate }) => {
     );
   }
 
-  if (isVerifying) {
-    return (
-      <div className="max-w-xl mx-auto px-6 py-12">
-        <div className="bg-white rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden">
-          <div className="p-12 text-center relative">
-            <button 
-              onClick={() => setIsVerifying(false)}
-              className="absolute left-8 top-8 p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-full transition-all"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-              <Mail size={32} />
-            </div>
-            <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter mb-4">Check your Mail</h2>
-            <p className="text-gray-500 font-medium text-sm px-4">
-              We've sent a 6-digit code to <span className="font-bold text-black">{formData.email}</span>.
-            </p>
-          </div>
-
-          <div className="px-12">
-             {error && (
-               <div className="bg-red-50 border border-red-100 text-red-600 px-6 py-4 rounded-2xl flex flex-col gap-3 mb-6">
-                 <div className="flex items-center gap-3">
-                   <AlertCircle size={20} />
-                   <span className="text-[10px] font-black uppercase tracking-widest">{error}</span>
-                 </div>
-                 {rateLimited && (
-                   <button 
-                     onClick={bypassVerification}
-                     className="bg-white/50 text-red-700 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white transition-all border border-red-200"
-                   >
-                     Skip for now (Debug Mode)
-                   </button>
-                 )}
-               </div>
-             )}
-             {success && <div className="bg-green-50 border border-green-100 text-green-600 px-6 py-4 rounded-2xl flex items-center gap-3 mb-6"><CheckCircle2 size={20} /><span className="text-xs font-bold uppercase tracking-widest">{success}</span></div>}
-          </div>
-
-          <form onSubmit={handleVerifyOtp} className="p-12 pt-0 space-y-8">
-            <div className="flex justify-between gap-3">
-              {otp.map((digit, idx) => (
-                <input
-                  key={idx}
-                  ref={(el) => (otpInputs.current[idx] = el)}
-                  type="text"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(e.target.value, idx)}
-                  onKeyDown={(e) => handleOtpKeyDown(e, idx)}
-                  className="w-12 h-16 bg-gray-50 border-2 border-gray-100 rounded-2xl text-center text-2xl font-black text-black focus:border-amber-500 focus:bg-white outline-none transition-all"
-                />
-              ))}
-            </div>
-
-            <button type="submit" disabled={loading} className="w-full bg-black text-white py-5 rounded-full font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-amber-500 hover:text-black transition-all shadow-xl disabled:opacity-50">
-              {loading ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
-              Verify & Secure Account
-            </button>
-
-            <div className="text-center pt-4 flex flex-col gap-4">
-              <button 
-                type="button"
-                onClick={handleResendCode}
-                disabled={resendTimer > 0 || loading}
-                className={`text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 mx-auto ${resendTimer > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-amber-600 hover:text-black transition-colors'}`}
-              >
-                <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-                {resendTimer > 0 ? `Resend Code in ${resendTimer}s` : 'Resend Verification Code'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-xl mx-auto px-6 py-12">
       <div className="bg-white rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden">
@@ -367,14 +191,6 @@ const Account: React.FC<AccountProps> = ({ user, onUpdate }) => {
                 <AlertCircle size={20} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{error}</span>
               </div>
-              {rateLimited && (
-                <div className="mt-2 p-3 bg-white/50 rounded-xl border border-red-100 flex items-center gap-3">
-                   <Terminal size={14} className="text-red-400" />
-                   <p className="text-[9px] font-bold text-red-500 leading-tight uppercase">
-                     Note: Supabase limits emails on free accounts. Update "Rate Limits" in Auth Settings.
-                   </p>
-                </div>
-              )}
             </div>
           )}
           {success && <div className="bg-green-50 border border-green-100 text-green-600 px-6 py-4 rounded-2xl flex items-center gap-3"><CheckCircle2 size={20} /><span className="text-xs font-bold uppercase tracking-widest">{success}</span></div>}
