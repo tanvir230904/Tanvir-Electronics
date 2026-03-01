@@ -14,6 +14,7 @@ import Account from './components/Account';
 import Features from './components/Features';
 import TechnicianSection from './components/TechnicianSection';
 import Complain from './components/Complain';
+import TechAI from './components/TechAI';
 import { AppView, Product, CartItem, OrderDetails, PaymentMethod, User, Category, Technician } from './types';
 import { supabase } from './lib/supabase';
 import { CATEGORIES, PRODUCTS } from './constants';
@@ -237,6 +238,7 @@ const App: React.FC = () => {
         onFeaturesClick={() => navigateTo(AppView.FEATURES)}
         onTechnicianClick={() => navigateTo(AppView.TECHNICIANS)}
         onComplainClick={() => navigateTo(AppView.COMPLAIN)}
+        onTechAIClick={() => navigateTo(AppView.TECH_AI)}
         cartCount={cartCount}
         user={user}
       />
@@ -247,6 +249,7 @@ const App: React.FC = () => {
         {currentView === AppView.FEATURES && <Features onExplore={() => navigateTo(AppView.CATEGORIES)} />}
         {currentView === AppView.TECHNICIANS && <TechnicianSection technicians={dbTechnicians} />}
         {currentView === AppView.COMPLAIN && <Complain />}
+        {currentView === AppView.TECH_AI && <TechAI />}
         {currentView === AppView.DISCOUNTS && <DiscountSection products={dbProducts} onBack={() => navigateTo(AppView.CATEGORIES)} onProductClick={(p) => { setSelectedProduct(p); navigateTo(AppView.PRODUCT_DETAIL); }} onAddToCart={handleAddToCart} />}
         {currentView === AppView.ACCOUNT && <Account user={user} onUpdate={handleUserUpdate} />}
         {(currentView === AppView.CATEGORY_DETAIL || currentView === AppView.SEARCH_RESULTS) && <CategoryDetail title={selectedCategory} allProducts={dbProducts} onBack={() => navigateTo(AppView.CATEGORIES)} onProductClick={(p) => { setSelectedProduct(p); navigateTo(AppView.PRODUCT_DETAIL); }} onAddToCart={handleAddToCart} isSearch={currentView === AppView.SEARCH_RESULTS} />}
