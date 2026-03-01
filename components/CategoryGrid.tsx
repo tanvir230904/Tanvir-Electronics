@@ -12,7 +12,11 @@ interface CategoryGridProps {
 
 const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, products, onCategoryClick, onDiscountClick }) => {
   const features = [
-    { icon: <Check className="text-amber-500" />, title: "Quality Product" },
+    { 
+      icon: <Check className="text-amber-500" />, 
+      title: "Quality Product",
+      subText: "Best Quality Product"
+    },
     { 
       icon: <Truck className="text-amber-500" />, 
       title: "Free Shipping",

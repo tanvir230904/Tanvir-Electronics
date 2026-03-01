@@ -11,13 +11,14 @@ interface NavbarProps {
   onAccountClick: () => void;
   onFeaturesClick: () => void;
   onTechnicianClick: () => void;
+  onComplainClick: () => void;
   cartCount: number;
   user: User | null;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ 
   onLogoClick, onShopClick, onSearch, onCartClick, 
-  onAccountClick, onFeaturesClick, onTechnicianClick, cartCount, user 
+  onAccountClick, onFeaturesClick, onTechnicianClick, onComplainClick, cartCount, user 
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +51,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <button onClick={onFeaturesClick} className="hover:text-black transition-colors">Features</button>
           <button onClick={onShopClick} className="hover:text-black transition-colors">Shop</button>
           <button onClick={onTechnicianClick} className="hover:text-black transition-colors">Support</button>
+          <button onClick={onComplainClick} className="hover:text-black transition-colors">Complain</button>
           <button onClick={onAccountClick} className={`transition-colors ${user ? 'text-amber-600 font-bold' : 'hover:text-black'}`}>
             {user ? 'My Profile' : 'Sign Up'}
           </button>
