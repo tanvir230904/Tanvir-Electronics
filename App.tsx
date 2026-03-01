@@ -99,15 +99,31 @@ const App: React.FC = () => {
           supabase.from('technicians').select('*')
         ]);
 
-        const categories = catRes.data?.length ? catRes.data.map(c => ({
+        const dbCats: Category[] = catRes.data?.map(c => ({
           id: c.id, name: c.name, imageUrl: c.image_url, icon: c.icon_name, productCount: c.product_count
-        })) : CATEGORIES;
+        })) || [];
 
-        const products = prodRes.data?.length ? prodRes.data.map(p => ({
+        // Merge categories: Prefer DB, but include hardcoded ones not in DB
+        const categories = [...dbCats];
+        CATEGORIES.forEach(c => {
+          if (!categories.find(dc => dc.name === c.name)) {
+            categories.push(c);
+          }
+        });
+
+        const dbProds: Product[] = prodRes.data?.map(p => ({
           id: p.id, name: p.name, price: p.price, discountPrice: p.discount_price,
           category: p.category_name, description: p.description, imageUrl: p.image_url,
           images: p.images || [], features: p.features || [], specs: p.specs || {}, reviews: []
-        })) : PRODUCTS;
+        })) || [];
+
+        // Merge products: Prefer DB, but include hardcoded ones not in DB
+        const products = [...dbProds];
+        PRODUCTS.forEach(p => {
+          if (!products.find(dp => dp.name === p.name)) {
+            products.push(p);
+          }
+        });
 
         setDbCategories(categories);
         setDbProducts(products);

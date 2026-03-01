@@ -2,7 +2,7 @@
 import React from 'react';
 import { 
   Sparkles, ShieldCheck, Truck, RotateCcw, 
-  Search, Fingerprint, Zap, Award, ArrowRight 
+  Search, Fingerprint, Zap, Award, ArrowRight, Gamepad2 
 } from 'lucide-react';
 
 interface FeaturesProps {
@@ -37,9 +37,19 @@ const Features: React.FC<FeaturesProps> = ({ onExplore }) => {
       description: "Not satisfied? No problem. Our hassle-free return policy ensures you can shop with absolute peace of mind."
     },
     {
+      icon: <Gamepad2 className="text-indigo-600" size={32} />,
+      title: "Next-Gen Gaming",
+      description: "Explore our elite collection of Gaming Consoles. From PS5 Pro to Steam Deck, we bring the ultimate gaming experience to your home."
+    },
+    {
       icon: <Award className="text-amber-600" size={32} />,
       title: "Premium Curation",
       description: "We don't sell everything. We only sell the best. Our 2025 flagship lineup is hand-picked by tech experts."
+    },
+    {
+      icon: <Truck className="text-blue-600" size={32} />,
+      title: "Global Sourcing",
+      description: "We source directly from manufacturers in Japan, USA, and Germany to ensure you get authentic global versions of every product."
     }
   ];
 

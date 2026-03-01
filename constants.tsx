@@ -1,5 +1,5 @@
 
-import { Smartphone, Headphones, Speaker, Laptop, Monitor, Computer, Zap, Mouse, Keyboard } from 'lucide-react';
+import { Smartphone, Headphones, Speaker, Laptop, Monitor, Computer, Zap, Mouse, Keyboard, Gamepad2 } from 'lucide-react';
 import { Category, Product } from './types';
 
 export const CATEGORIES: Category[] = [
@@ -9,6 +9,7 @@ export const CATEGORIES: Category[] = [
   { id: '4', name: 'Laptop', productCount: 25, imageUrl: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=600&auto=format&fit=crop', icon: 'Laptop' },
   { id: '5', name: 'Monitor', productCount: 25, imageUrl: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?q=80&w=600&auto=format&fit=crop', icon: 'Monitor' },
   { id: '6', name: 'PC', productCount: 25, imageUrl: 'https://images.unsplash.com/photo-1587831990711-23ca6441447b?q=80&w=600&auto=format&fit=crop', icon: 'Computer' },
+  { id: '10', name: 'Gaming Console', productCount: 25, imageUrl: 'https://images.unsplash.com/photo-1486401899868-0e435ed85128?q=80&w=600&auto=format&fit=crop', icon: 'Gamepad2' },
   { id: '8', name: 'Keyboard', productCount: 25, imageUrl: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?q=80&w=600&auto=format&fit=crop', icon: 'Keyboard' },
   { id: '9', name: 'Mouse', productCount: 25, imageUrl: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?q=80&w=600&auto=format&fit=crop', icon: 'Mouse' },
   { id: '7', name: 'Charger', productCount: 25, imageUrl: 'https://images.unsplash.com/photo-1625842268584-8f3bf9ff16a1?q=80&w=600&auto=format&fit=crop', icon: 'Zap' }
@@ -36,6 +37,9 @@ const imgPools: Record<string, string[]> = {
   ],
   Charger: [
     'photo-1625842268584-8f3bf9ff16a1', 'photo-1616440347437-b17f35b4976c', 'photo-1583863788434-e58a36330cf0'
+  ],
+  'Gaming Console': [
+    'photo-1486401899868-0e435ed85128', 'photo-1605906302484-3c59f054bd02', 'photo-1606144042614-b2417e99c4e3', 'photo-1592155153842-c94054a914ce'
   ],
   Keyboard: [
     'photo-1511467687858-23d96c32e4ae', 'photo-1595225476474-87563907a212', 'photo-1618384881397-3c6d98210a8b', 'photo-1587829741301-dc798b83add3', 'photo-1541140134513-85a161dc4a00'
@@ -163,6 +167,14 @@ const chargerNames = [
   'Zagg Mophie Speedport 120', 'Satechi Duo Wireless Power Bank', 'Scosche BaseLynx 2.0', 'Pitaka MagEZ Slider 2', 'Razer USB-C 130W GaN'
 ];
 
+const gamingNames = [
+  'PlayStation 5 Pro', 'Xbox Series X Elite', 'Nintendo Switch OLED 2', 'Steam Deck OLED 1TB', 'ASUS ROG Ally X',
+  'PlayStation 5 Slim', 'Xbox Series S 1TB Black', 'Nintendo Switch Lite', 'Lenovo Legion Go', 'MSI Claw A1M',
+  'Ayaneo Kun', 'GPD Win 4', 'Analogue Pocket', 'Evercade EXP', 'Ayn Odin 2',
+  'PlayStation VR2', 'Meta Quest 3S', 'Xbox Series X Halo Edition', 'Nintendo Switch Mario Red', 'PlayStation 5 Digital',
+  'Valve Index VR Kit', 'Pico 4 Ultra', 'Razer Edge', 'Logitech G Cloud', 'NVIDIA Shield TV Pro'
+];
+
 export const PRODUCTS: Product[] = [
   ...generateProducts('Mobile', 'm', 95000, mobileNames),
   ...generateProducts('Earphone', 'e', 18000, earphoneNames),
@@ -172,7 +184,8 @@ export const PRODUCTS: Product[] = [
   ...generateProducts('PC', 'p', 185000, pcNames),
   ...generateProducts('Mouse', 'ms', 6500, mouseNames),
   ...generateProducts('Keyboard', 'kb', 12500, keyboardNames),
-  ...generateProducts('Charger', 'c', 4500, chargerNames)
+  ...generateProducts('Charger', 'c', 4500, chargerNames),
+  ...generateProducts('Gaming Console', 'gc', 65000, gamingNames)
 ];
 
 export const ICON_MAP: Record<string, any> = {
@@ -184,5 +197,6 @@ export const ICON_MAP: Record<string, any> = {
   Computer: Computer,
   Zap: Zap,
   Mouse: Mouse,
-  Keyboard: Keyboard
+  Keyboard: Keyboard,
+  Gamepad2: Gamepad2
 };
