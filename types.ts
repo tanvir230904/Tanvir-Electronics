@@ -75,7 +75,8 @@ export enum AppView {
   FEATURES = 'features',
   TECHNICIANS = 'technicians',
   COMPLAIN = 'complain',
-  TECH_AI = 'tech_ai'
+  TECH_AI = 'tech_ai',
+  ADMIN = 'admin'
 }
 
 export type PaymentMethod = 'cod' | 'bkash' | 'nagad' | 'paypal' | 'bank';
