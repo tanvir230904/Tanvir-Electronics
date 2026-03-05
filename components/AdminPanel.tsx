@@ -30,6 +30,7 @@ const AdminPanel: React.FC = () => {
   // Form states for adding/editing
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [formData, setFormData] = useState<any>({});
 
   useEffect(() => {
     fetchData();
@@ -42,13 +43,13 @@ const AdminPanel: React.FC = () => {
         const [prodRes, compRes, orderRes] = await Promise.all([
           supabase.from('products').select('id', { count: 'exact' }),
           supabase.from('complaints').select('id', { count: 'exact' }).eq('status', 'pending'),
-          supabase.from('orders').select('total_amount') // Assuming an orders table exists
+          supabase.from('orders').select('total_amount')
         ]);
         
         setStats({
           totalProducts: prodRes.count || 0,
           pendingComplaints: compRes.count || 0,
-          totalSales: orderRes.data?.reduce((acc, curr) => acc + curr.total_amount, 0) || 0,
+          totalSales: orderRes.data?.reduce((acc, curr) => acc + (curr.total_amount || 0), 0) || 0,
           totalOrders: orderRes.data?.length || 0
         });
       } else if (activeTab === 'products') {
@@ -71,7 +72,7 @@ const AdminPanel: React.FC = () => {
         if (data) setTechnicians(data.map(t => ({
           id: t.id, name: t.name, specialty: t.specialty, experience: t.experience,
           phone: t.phone, email: t.email, facebookUrl: t.facebook_url, imageUrl: t.image_url,
-          rating: t.rating, completedJobs: t.completed_jobs
+          rating: t.rating, completed_jobs: t.completed_jobs
         })));
       }
     } catch (err) {
@@ -79,6 +80,63 @@ const AdminPanel: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const table = activeTab;
+      let payload = { ...formData };
+      
+      // Map frontend fields to DB fields if necessary
+      if (activeTab === 'products') {
+        payload = {
+          name: formData.name,
+          price: formData.price,
+          discount_price: formData.discountPrice,
+          category_name: formData.category,
+          description: formData.description,
+          image_url: formData.imageUrl,
+          images: formData.images || [],
+          features: formData.features || [],
+          specs: formData.specs || {}
+        };
+      } else if (activeTab === 'categories') {
+        payload = {
+          name: formData.name,
+          image_url: formData.imageUrl,
+          icon_name: formData.icon,
+          product_count: formData.productCount || 0
+        };
+      }
+
+      if (editingItem) {
+        const { error } = await supabase.from(table).update(payload).eq('id', editingItem.id);
+        if (error) throw error;
+        setSuccess('Item updated successfully');
+      } else {
+        const { error } = await supabase.from(table).insert([payload]);
+        if (error) throw error;
+        setSuccess('Item added successfully');
+      }
+      
+      setIsModalOpen(false);
+      setEditingItem(null);
+      setFormData({});
+      fetchData();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    setFormData(item);
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (table: string, id: string) => {
@@ -228,7 +286,7 @@ const AdminPanel: React.FC = () => {
                             <td className="py-6 font-black text-sm">{p.price}</td>
                             <td className="py-6">
                               <div className="flex items-center gap-2">
-                                <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-black transition-all"><Edit2 size={16} /></button>
+                                <button onClick={() => handleEdit(p)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-black transition-all"><Edit2 size={16} /></button>
                                 <button onClick={() => handleDelete('products', p.id)} className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-all"><Trash2 size={16} /></button>
                               </div>
                             </td>
@@ -251,7 +309,7 @@ const AdminPanel: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-black transition-all shadow-sm"><Edit2 size={14} /></button>
+                          <button onClick={() => handleEdit(c)} className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-black transition-all shadow-sm"><Edit2 size={14} /></button>
                           <button onClick={() => handleDelete('categories', c.id)} className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-all shadow-sm"><Trash2 size={14} /></button>
                         </div>
                       </div>
@@ -331,7 +389,7 @@ const AdminPanel: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-black transition-all shadow-sm"><Edit2 size={16} /></button>
+                          <button onClick={() => handleEdit(t)} className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-black transition-all shadow-sm"><Edit2 size={16} /></button>
                           <button onClick={() => handleDelete('technicians', t.id)} className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-all shadow-sm"><Trash2 size={16} /></button>
                         </div>
                       </div>
@@ -343,6 +401,133 @@ const AdminPanel: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Add/Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="bg-black p-8 text-white flex items-center justify-between">
+              <h2 className="text-2xl font-black uppercase tracking-tighter">
+                {editingItem ? 'Edit' : 'Add New'} {activeTab.slice(0, -1)}
+              </h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-all">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto scrollbar-hide">
+              {activeTab === 'products' && (
+                <>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Product Name</label>
+                      <input 
+                        type="text" required
+                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold"
+                        value={formData.name || ''}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Category</label>
+                      <select 
+                        required
+                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold appearance-none"
+                        value={formData.category || ''}
+                        onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Price (e.g. ৳ 1,200)</label>
+                      <input 
+                        type="text" required
+                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold"
+                        value={formData.price || ''}
+                        onChange={(e) => setFormData({...formData, price: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Discount Price</label>
+                      <input 
+                        type="text"
+                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold"
+                        value={formData.discountPrice || ''}
+                        onChange={(e) => setFormData({...formData, discountPrice: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Image URL</label>
+                    <input 
+                      type="url" required
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold"
+                      value={formData.imageUrl || ''}
+                      onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Description</label>
+                    <textarea 
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold min-h-[120px]"
+                      value={formData.description || ''}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    />
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'categories' && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Category Name</label>
+                    <input 
+                      type="text" required
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold"
+                      value={formData.name || ''}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Image URL</label>
+                    <input 
+                      type="url" required
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold"
+                      value={formData.imageUrl || ''}
+                      onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Icon Name (Lucide)</label>
+                    <input 
+                      type="text"
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold"
+                      value={formData.icon || ''}
+                      onChange={(e) => setFormData({...formData, icon: e.target.value})}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="pt-6">
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-black text-white py-5 rounded-full font-black uppercase tracking-widest text-xs hover:bg-amber-500 hover:text-black transition-all shadow-xl flex items-center justify-center gap-3"
+                >
+                  {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                  {editingItem ? 'Update' : 'Create'} {activeTab.slice(0, -1)}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
