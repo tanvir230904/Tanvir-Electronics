@@ -4,12 +4,16 @@ import {
   LayoutDashboard, Package, ListTree, MessageSquare, 
   Users, Plus, Trash2, Edit2, Save, X, 
   CheckCircle2, AlertCircle, Loader2, Search,
-  TrendingUp, ShoppingCart, DollarSign, UserCheck
+  TrendingUp, ShoppingCart, DollarSign, UserCheck,
+  Lock, LogIn
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Category, Product, Technician } from '../types';
 
 const AdminPanel: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'complaints' | 'technicians'>('dashboard');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,8 +37,33 @@ const AdminPanel: React.FC = () => {
   const [formData, setFormData] = useState<any>({});
 
   useEffect(() => {
-    fetchData();
-  }, [activeTab]);
+    const authStatus = sessionStorage.getItem('admin_auth');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [activeTab, isAuthenticated]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === '230904') {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('admin_auth', 'true');
+      setLoginError('');
+    } else {
+      setLoginError('Invalid password. Please try again.');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('admin_auth');
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -162,6 +191,52 @@ const AdminPanel: React.FC = () => {
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-6 py-12 animate-in fade-in zoom-in-95 duration-500">
+        <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden">
+          <div className="bg-black p-10 text-white text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-10 -mt-10" />
+            <div className="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg relative z-10">
+              <Lock size={32} className="text-black" />
+            </div>
+            <h2 className="text-3xl font-black uppercase tracking-tighter relative z-10">Admin Access</h2>
+            <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-2 relative z-10">Authorized Personnel Only</p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="p-10 space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Enter Password</label>
+              <input 
+                type="password" 
+                required
+                autoFocus
+                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 font-bold text-center tracking-[0.5em]"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            {loginError && (
+              <div className="flex items-center gap-2 text-red-500 text-[10px] font-black uppercase tracking-widest justify-center animate-bounce">
+                <AlertCircle size={14} />
+                {loginError}
+              </div>
+            )}
+
+            <button 
+              type="submit"
+              className="w-full bg-black text-white py-5 rounded-full font-black uppercase tracking-widest text-xs hover:bg-amber-500 hover:text-black transition-all shadow-xl flex items-center justify-center gap-3"
+            >
+              <LogIn size={20} />
+              Verify Access
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col lg:flex-row gap-8">
@@ -197,6 +272,16 @@ const AdminPanel: React.FC = () => {
                 </button>
               ))}
             </nav>
+
+            <div className="mt-10 pt-10 border-t border-gray-100">
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-bold text-sm text-red-500 hover:bg-red-50 transition-all"
+              >
+                <X size={18} />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
 
